@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, json, struct, subprocess, logging
+import sys, json, struct, subprocess, logging, os
 
 # Using print() for logging messages will cause the Firefox connection to
 # break; FF expects everything going out stdout to adhere to the same message
@@ -9,6 +9,20 @@ import sys, json, struct, subprocess, logging
 logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 application = 'firefox'
+
+# If this process's parent is /usr/lib/<application>/firefox, use that
+# application for getting the launcher (this makes this extension usable with
+# /usr/lib/firefox-developer-edition/firefox, for example)
+parentPath = os.path.realpath('/proc/%d/exe' % os.getppid())
+parentDir, parentName = os.path.split(parentPath)
+if parentName == 'firefox':
+    dirDir, dirName = os.path.split(parentDir)
+    if dirDir == '/usr/lib':
+        application = dirName
+else:
+    # If Firefox isn't running this script, perhaps it's being tested from the
+    # command line--enable debug logging
+    logging.getLogger().setLevel(logging.DEBUG)
 
 # try libunity
 launcher = None
@@ -20,7 +34,7 @@ try:
     gi.require_version('Unity', '7.0')
     from gi.repository import Unity, GObject
     loop = GObject.MainLoop()
-    launcher = Unity.LauncherEntry.get_for_desktop_id("firefox.desktop")
+    launcher = Unity.LauncherEntry.get_for_desktop_id(application + ".desktop")
     launcher.set_property('count', 0)
     launcher.set_property('count_visible', False)
     launcher.set_property('progress', 0.0)
