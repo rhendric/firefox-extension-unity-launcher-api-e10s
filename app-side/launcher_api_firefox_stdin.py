@@ -79,6 +79,8 @@ def processMessage(receivedMessage):
             logging.warning("Count has to be in range 0...9999.")
         elif (count == previousCount):
             logging.debug("Count has not changed.")
+            if count == 0:
+                return
         else:
             previousCount = count
             if (count == 0):
