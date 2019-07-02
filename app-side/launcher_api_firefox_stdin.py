@@ -32,8 +32,8 @@ previousProgress = 0.0
 try:
     import gi
     gi.require_version('Unity', '7.0')
-    from gi.repository import Unity, GObject
-    loop = GObject.MainLoop()
+    from gi.repository import Unity, GLib
+    loop = GLib.MainLoop()
     launcher = Unity.LauncherEntry.get_for_desktop_id(application + ".desktop")
     launcher.set_property('count', 0)
     launcher.set_property('count_visible', False)
