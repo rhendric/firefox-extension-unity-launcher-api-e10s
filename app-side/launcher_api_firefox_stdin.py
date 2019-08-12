@@ -35,10 +35,15 @@ try:
     from gi.repository import Unity, GLib
     loop = GLib.MainLoop()
     launcher = Unity.LauncherEntry.get_for_desktop_id(application + ".desktop")
-    launcher.set_property('count', 0)
-    launcher.set_property('count_visible', False)
-    launcher.set_property('progress', 0.0)
-    launcher.set_property('progress_visible', False)
+
+    def update_launcher(**props):
+        def do_update(props):
+            for k, v in props.items():
+                launcher.set_property(k, v)
+            return False
+        GLib.idle_add(do_update, props)
+
+    update_launcher(count=0, count_visible=False, progress=0.0, progress_visible=False)
     try:
         import _thread
         _thread.start_new_thread(loop.run, ())
@@ -88,10 +93,7 @@ def processMessage(receivedMessage):
                 # reset task manager entry (make count and progress invisible)
                 #
                 if launcher is not None:
-                    launcher.set_property('count', 0)
-                    launcher.set_property('count_visible', False)
-                    launcher.set_property('progress', 0.0)
-                    launcher.set_property('progress_visible', False)
+                    update_launcher(count=0, count_visible=False, progress=0.0, progress_visible=False)
                 else:
                     subprocess.run(["gdbus", "emit", "--session", "--object-path", "/", "--signal", "com.canonical.Unity.LauncherEntry.Update", application, "{'progress-visible': <'false'>, 'count-visible': <'false'>, 'count': <'0'>, 'progress': <'0'>}"])
                 return
@@ -100,9 +102,7 @@ def processMessage(receivedMessage):
                 # set task manager entry's 'count'
                 #
                 if launcher is not None:
-                    launcher.set_property('count', count)
-                    launcher.set_property('count_visible', True)
-                    launcher.set_property('progress_visible', True)
+                    update_launcher(count=count, count_visible=True, progress_visible=True)
                 else:
                     subprocess.run(["gdbus", "emit", "--session", "--object-path", "/", "--signal", "com.canonical.Unity.LauncherEntry.Update", application, "{'progress-visible': <'true'>, 'count-visible': <'true'>, 'count': <'%d'>}" % count])
     except:
@@ -124,7 +124,7 @@ def processMessage(receivedMessage):
             # set task manager entry's 'progress'
             #
             if launcher is not None:
-                launcher.set_property('progress', progress)
+                update_launcher(progress=progress)
             else:
                 subprocess.run(["gdbus", "emit", "--session", "--object-path", "/", "--signal", "com.canonical.Unity.LauncherEntry.Update", application, "{'progress-visible': <'true'>, 'progress': <'%.4f'>}" % progress])
     except:
